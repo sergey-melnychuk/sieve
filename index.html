@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        #grid {
+            display: grid;
+            gap: 1px;
+            background-color: #333;
+            padding: 5px;
+            width: fit-content;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+
+            /* Centering */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* Typography */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+        .crossed { 
+            background-color: #888;
+        }
+        .prime {
+            background-color: #007bff;
+            transform: scale(1.2);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="grid"></div>
+
+    <script type="module">
+        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+        import init, { start_sieve_stream } from './pkg/sieve.js';
+
+        async function start() {
+            await init();
+            const n = 25;
+            const grid = document.getElementById('grid');
+            const cells = [];
+
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = `repeat(${n}, 30px)`;
+
+            for (let i = 1; i <= n * n; i++) {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                div.innerText = i;
+                grid.appendChild(div);
+                cells[i] = div;
+            }
+
+            let stream = start_sieve_stream(n);
+            while (true) {
+                const event = await stream.next();
+                // console.log(event);
+                if (event === null || event === undefined) break;
+
+                const { number, status } = event;
+                const el = cells[number];
+                
+                if (status === 'prime') {
+                    el.classList.add('prime');
+                } else {
+                    el.classList.add('crossed');
+                }
+
+                // OPTIONAL: Artificial delay to enjoy the animation
+                // If we remove this, it runs as fast as the browser can paint.
+                // If we keep it, Rust waits for JS to finish this delay!
+                await sleep(5);
+            }
+        }
+        start();
+    </script>
+</body>
+</html>
